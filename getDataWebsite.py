@@ -7,8 +7,15 @@ from airflow import DAG
 
 # Operators; we need this to operate!
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+
+
+def holapython():
+    print("hola Mundo")
+
+
 with DAG(
-    'getDataWebsite Max-Distelsa',
+    'getDataWebsite MaxDistelsa',
     # These args will get passed on to each operator
     # You can override them on a per-task basis during operator initialization
     default_args={
@@ -44,21 +51,10 @@ with DAG(
         bash_command='date',
     )
 
-    t2 = BashOperator(
-        task_id='sleep',
-        depends_on_past=False,
-        bash_command='sleep 5',
-        retries=3,
-    )
-    t1.doc_md = dedent(
-        """\
-    #### Task Documentation Hello World
-    You can document your task using the attributes `doc_md` (markdown),
-    `doc` (plain text), `doc_rst`, `doc_json`, `doc_yaml` which gets
-    rendered in the UI's Task Instance Details page.
-    ![img](http://montcs.bloomu.edu/~bobmon/Semesters/2012-01/491/import%20soul.png)
-
-    """
+    t2 = PythonOperator(
+        task_id='run_python_function',  # Unique task ID
+        python_callable=holapython,  # Python function to run
+        provide_context=True,  # Provides context like execution_date
     )
 
 
