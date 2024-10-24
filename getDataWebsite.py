@@ -1,7 +1,7 @@
 
 from datetime import datetime, timedelta
-from textwrap import dedent
-
+import time
+from selenium import webdriver
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
 
@@ -13,9 +13,15 @@ from airflow.operators.python import PythonOperator
 def holapython():
     print("hola Mundo")
 
+def holapython():
+    driver = webdriver.Chrome()
+    web = driver.get('https://www.max.com.gt/tv-y-video/televisores')
+    time.sleep(3)
+    print(web.text)
+
 
 with DAG(
-    'get.data.max.distelsa',
+    'load.data.websites_to_datalake',
     # These args will get passed on to each operator
     # You can override them on a per-task basis during operator initialization
     default_args={
