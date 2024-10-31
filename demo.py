@@ -156,20 +156,20 @@ with DAG(
          phone TEXT,
          address TEXT,
          type TEXT
-         )
+         );
 
          CREATE TABLE IF NOT EXISTS events(
          evento TEXT,
          idcliente TEXT,
          fecha TEXT
-         )
+         );
 
          CREATE TABLE IF NOT EXISTS purchases(
          idevento TEXT,
          idcliente TEXT,
          type TEXT,
          fecha TEXT
-         )
+         );
         '''
     )
 
