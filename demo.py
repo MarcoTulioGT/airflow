@@ -181,14 +181,14 @@ with DAG(
 
     l2 = PostgresOperator(
         task_id= 'load_events',
-        postgres_conn_id='events',
+        postgres_conn_id='postgres',
         sql='''INSERT INTO customers (evento, idcliente, fecha) VALUES ('addcart','60','2024-09-04 19:01:48') '''
     )
 
     l3 = PostgresOperator(
-        task_id= 'load_codes',
+        task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1',60','pay','2024-09-04 19:01:48') '''
+        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','60','pay','2024-09-04 19:01:48') '''
     )
 
     ping_mongo = PythonOperator(
