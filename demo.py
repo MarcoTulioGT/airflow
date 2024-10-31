@@ -23,7 +23,7 @@ def holapython():
 
 def read():
     bucket_name = 'rivarly_newclassics'
-    csv_file_name = 'gt_data_lake/RAW_DATA/clientes.csv'
+    blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
     blob_destination = 'gt_data_lake/PROCESSED_DATA/clientes.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
