@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from google.cloud import storage
 from pymongo.mongo_client import MongoClient
+
+import psycopg2
 import pandas as pd
 from io import StringIO
 
@@ -10,6 +12,7 @@ from airflow.models import Variable
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 uri = Variable.get("url_mongo")
 
@@ -86,6 +89,44 @@ def pingMongo():
         print("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception as e:
         print(e)
+
+
+def postgres_to_mongo():
+    postgres_hook = PostgresHook(postgres_conn_id="postgres")
+    client = MongoClient(uri)
+    db = client["Xgo"]
+    collection = db["compras"]
+    conn = postgres_hook.get_conn()
+    cursor = conn.cursor()
+    cursor.execute('''
+               select  id, firstname , lastname , phone , address , c.type, p.type, p.fecha 
+                from customers c 
+                join events e 
+                on c.id = e.idcliente 
+                join purchases p 
+                on c.id = p.idcliente ''')
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    df = pd.DataFrame(rows)
+    df.columns = ['id','firstname','lastname','phone','address','tipo_cliente', 'tipo_evento', 'fecha']
+    print(df)
+    nested_df = (
+        df.groupby(["id", "firstname","lastname","phone","address","tipo_cliente"])
+        .apply(lambda x: x[["tipo_evento", "fecha", ]].to_dict("records"))
+        .reset_index(name="purchases")
+    )
+
+    print(nested_df)
+    data_to_insert = nested_df.to_dict(orient="records")
+    if df.any().any():
+    
+        result = collection.insert_many(data_to_insert)
+        client.close()
+    else:
+        print("All values are False or the DataFrame is empty.")
+
 
 
 
@@ -188,14 +229,14 @@ with DAG(
     l2 = PostgresOperator(
         task_id= 'load_events',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO events (evento, idcliente, fecha) VALUES ('addcart','60','2024-09-04 19:01:48') '''
+        sql='''INSERT INTO events (evento, idcliente, fecha) VALUES ('addcart','101','2024-09-04 19:01:48') '''
     )
 
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','60','pay','2024-09-04 19:01:48'),
-               ('1','60','pay','2024-09-04 19:01:48'), ('1','500','pay','2024-10-04 19:01:48'), ('1','800','pay','2024-04-04 19:01:48');
+        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','101','pay','2024-09-04 19:01:48'),
+               ('2','101','pay','2024-09-04 19:01:48'), ('3','101','pay','2024-10-04 19:01:48'), ('4','101','pay','2024-04-04 19:01:48');
              '''
     )
 
@@ -207,7 +248,7 @@ with DAG(
 
     load_mongo = PythonOperator(
         task_id='load_mongo',  # Unique task ID
-        python_callable=pingMongo,  # Python function to run
+        python_callable=postgres_to_mongo,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
