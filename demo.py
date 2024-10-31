@@ -4,11 +4,13 @@ from google.cloud import storage
 from pymongo.mongo_client import MongoClient
 import time
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-uri = "mongodb+srv://mcata:Mk21jm00@cluster0.s5vjz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+uri = Variable.get("url_mongo")
+
 
 
 def holapython():
@@ -92,7 +94,7 @@ with DAG(
     )
 
     create_table = PostgresOperator(
-        task_id= 'create_table',
+        task_id= 'create_tables',
         postgres_conn_id='postgres',
         sql='''
          CREATE TABLE IF NOT EXISTS customers(
