@@ -148,10 +148,7 @@ with DAG(
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        sql="""
-            INSERT INTO customers (firstname, lastname, phone, address, type)
-            VALUES %s
-        """,
+        #sql='''INSERT INTO customers (firstname, lastname, phone, address, type) VALUES %s ''',
         parameters="{{ task_instance.xcom_pull(task_ids='clean_codes') }}",  
         autocommit=True 
     )
