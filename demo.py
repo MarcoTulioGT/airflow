@@ -74,19 +74,19 @@ with DAG(
     )
 
     t2 = PythonOperator(
-        task_id='Load_Clients',  # Unique task ID
+        task_id='clean_customers',  # Unique task ID
         python_callable=read,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
     t3 = PythonOperator(
-        task_id='GetAndLoadCensus',  # Unique task ID
+        task_id='clean_events',  # Unique task ID
         python_callable=holapython,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
     t4 = PythonOperator(
-        task_id='GetAndLoadCountryCodes',  # Unique task ID
+        task_id='clean_codes',  # Unique task ID
         python_callable=holapython,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
