@@ -156,6 +156,7 @@ with DAG(
          DROP TABLE IF EXISTS purchases;
 
          CREATE TABLE customers(
+         id TEXT,
          firstname TEXT,
          lastname TEXT,
          phone TEXT,
@@ -181,7 +182,7 @@ with DAG(
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO customers (firstname, lastname, phone, address, type) VALUES ('John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
+        sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
     )
 
     l2 = PostgresOperator(
@@ -193,8 +194,8 @@ with DAG(
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','60','pay','2024-09-04 19:01:48') 
-               ('1','60','pay','2024-09-04 19:01:48'), ('1','500','pay','2024-10-04 19:01:48'), ('1','800','pay','2024-04-04 19:01:48')
+        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','60','pay','2024-09-04 19:01:48'),
+               ('1','60','pay','2024-09-04 19:01:48'), ('1','500','pay','2024-10-04 19:01:48'), ('1','800','pay','2024-04-04 19:01:48');
              '''
     )
 
