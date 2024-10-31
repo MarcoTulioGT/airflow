@@ -65,6 +65,19 @@ def load_events_postgres():
     return data
     
 
+def load_purchases_postgres():
+    bucket_name = 'rivarly_newclassics'
+    blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
+    #blob_destination = 'gt_data_lake/clientes_raw.csv'
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    csv_data = blob.download_as_text()
+    data = StringIO(csv_data)
+    df = pd.read_csv(data)
+    data = df.values.tolist()
+    return data
+
 def pingMongo():
     client = MongoClient(uri)
     # Send a ping to confirm a successful connection
@@ -115,7 +128,7 @@ with DAG(
 
     t2 = PythonOperator(
         task_id='clean_customers',  # Unique task ID
-        python_callable=read,  # Python function to run
+        python_callable=load_customers_postgres,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
@@ -126,10 +139,12 @@ with DAG(
     )
 
     t4 = PythonOperator(
-        task_id='clean_codes',  # Unique task ID
-        python_callable=load_customers_postgres,  # Python function to run
+        task_id='clean_purchases',  # Unique task ID
+        python_callable=load_purchases_postgres,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
+
+    load_purchases_postgres
 
     create_table = PostgresOperator(
         task_id= 'create_tables',
@@ -142,43 +157,38 @@ with DAG(
          address TEXT,
          type TEXT
          )
+
+         CREATE TABLE IF NOT EXISTS events(
+         evento TEXT,
+         idcliente TEXT,
+         fecha TEXT
+         )
+
+         CREATE TABLE IF NOT EXISTS purchases(
+         idevento TEXT,
+         idcliente TEXT,
+         type TEXT,
+         fecha TEXT
+         )
         '''
     )
 
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        #sql='''INSERT INTO customers (firstname, lastname, phone, address, type) VALUES %s ''',
-        parameters="{{ task_instance.xcom_pull(task_ids='clean_codes') }}",  
-        autocommit=True 
+        sql='''INSERT INTO customers (firstname, lastname, phone, address, type) VALUES ('John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
     )
 
     l2 = PostgresOperator(
         task_id= 'load_events',
-        postgres_conn_id='postgres',
-        sql='''
-         CREATE TABLE IF NOT EXISTS customers(
-         firstname TEXT,
-         lastname TEXT,
-         phone TEXT,
-         address TEXT,
-         type TEXT
-         )
-        '''
+        postgres_conn_id='events',
+        sql='''INSERT INTO customers (evento, idcliente, fecha) VALUES ('addcart','60','2024-09-04 19:01:48') '''
     )
 
     l3 = PostgresOperator(
         task_id= 'load_codes',
         postgres_conn_id='postgres',
-        sql='''
-         CREATE TABLE IF NOT EXISTS customers(
-         firstname TEXT,
-         lastname TEXT,
-         phone TEXT,
-         address TEXT,
-         type TEXT
-         )
-        '''
+        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1',60','pay','2024-09-04 19:01:48') '''
     )
 
     ping_mongo = PythonOperator(
