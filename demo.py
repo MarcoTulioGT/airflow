@@ -8,12 +8,13 @@ from airflow import DAG
 # Operators; we need this to operate!
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 
 def holapython():
     print("hola Mundo")
 
-def write_read():
+def read():
     bucket_name = 'rivarly_newclassics'
     blob_name = 'gt_data_lake/clientes.csv'
     storage_client = storage.Client()
@@ -65,7 +66,7 @@ with DAG(
 
     t2 = PythonOperator(
         task_id='LoadClients',  # Unique task ID
-        python_callable=write_read,  # Python function to run
+        python_callable=read,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
@@ -81,7 +82,21 @@ with DAG(
         provide_context=True,  # Provides context like execution_date
     )
 
+    create_table = PostgresOperator(
+        task_id= 'create_table',
+        postgres_conn_id='postgres',
+        sql='''
+         CREATE TABLE IF NOT EXIST customers(
+         firstname TEXT,
+         lastname TEXT,
+         phone: TEXT,
+         address: TEXT,
+         type: TEXT
+         )
+        '''
+    )
 
 
 
-    t1 >> [t2, t3, t4]
+
+    t1 >> [t2, t3, t4] >> create_table
