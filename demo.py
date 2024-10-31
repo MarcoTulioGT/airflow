@@ -16,7 +16,7 @@ def holapython():
 
 def read():
     bucket_name = 'rivarly_newclassics'
-    blob_name = 'gt_data_lake/clientes.csv'
+    blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
@@ -105,8 +105,56 @@ with DAG(
         '''
     )
 
-    pingmongo = PythonOperator(
-        task_id='validate_ping_mongo',  # Unique task ID
+    l1 = PostgresOperator(
+        task_id= 'load_customers',
+        postgres_conn_id='postgres',
+        sql='''
+         CREATE TABLE IF NOT EXISTS customers(
+         firstname TEXT,
+         lastname TEXT,
+         phone TEXT,
+         address TEXT,
+         type TEXT
+         )
+        '''
+    )
+
+    l2 = PostgresOperator(
+        task_id= 'load_events',
+        postgres_conn_id='postgres',
+        sql='''
+         CREATE TABLE IF NOT EXISTS customers(
+         firstname TEXT,
+         lastname TEXT,
+         phone TEXT,
+         address TEXT,
+         type TEXT
+         )
+        '''
+    )
+
+    l3 = PostgresOperator(
+        task_id= 'load_codes',
+        postgres_conn_id='postgres',
+        sql='''
+         CREATE TABLE IF NOT EXISTS customers(
+         firstname TEXT,
+         lastname TEXT,
+         phone TEXT,
+         address TEXT,
+         type TEXT
+         )
+        '''
+    )
+
+    ping_mongo = PythonOperator(
+        task_id='ping_mongo',  # Unique task ID
+        python_callable=pingMongo,  # Python function to run
+        provide_context=True,  # Provides context like execution_date
+    )
+
+    load_mongo = PythonOperator(
+        task_id='load_mongo',  # Unique task ID
         python_callable=pingMongo,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
@@ -114,4 +162,4 @@ with DAG(
 
 
 
-    t1 >> [t2, t3, t4] >> create_table >> pingmongo
+    t1 >> [t2, t3, t4] >> create_table >> [l1, l2, l3] >> ping_mongo >> load_mongo
