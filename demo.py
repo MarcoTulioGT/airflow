@@ -1,7 +1,9 @@
-
 from datetime import datetime, timedelta
 from google.cloud import storage
 from pymongo.mongo_client import MongoClient
+import pandas as pd
+from io import StringIO
+
 import time
 from airflow import DAG
 from airflow.models import Variable
@@ -19,13 +21,49 @@ def holapython():
 def read():
     bucket_name = 'rivarly_newclassics'
     blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
+    #blob_destination = 'gt_data_lake/clientes_raw.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
+    csv_data = blob.download_as_text()
+    data = StringIO(csv_data)
+    df = pd.read_csv(data)
+    print(df)
+    #csv_buffer = StringIO()
+    #df.to_csv(csv_buffer, index=False)
+    #csv_buffer.seek(0)
+    #blobdest = bucket.blob(blob_destination)
+    #blobdest.upload_from_file(csv_buffer, content_type="text/csv")
+    #with blob.open("r") as f:
+    #    print(f.read())
 
-    with blob.open("r") as f:
-        print(f.read())
 
+def load_customers_postgres():
+    bucket_name = 'rivarly_newclassics'
+    blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
+    #blob_destination = 'gt_data_lake/clientes_raw.csv'
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    csv_data = blob.download_as_text()
+    data = StringIO(csv_data)
+    df = pd.read_csv(data)
+    data = df.values.tolist()
+    return data
+
+def load_events_postgres():
+    bucket_name = 'rivarly_newclassics'
+    blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
+    #blob_destination = 'gt_data_lake/clientes_raw.csv'
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    csv_data = blob.download_as_text()
+    data = StringIO(csv_data)
+    df = pd.read_csv(data)
+    data = df.values.tolist()
+    return data
+    
 
 def pingMongo():
     client = MongoClient(uri)
@@ -83,13 +121,13 @@ with DAG(
 
     t3 = PythonOperator(
         task_id='clean_events',  # Unique task ID
-        python_callable=holapython,  # Python function to run
+        python_callable=load_events_postgres,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
     t4 = PythonOperator(
         task_id='clean_codes',  # Unique task ID
-        python_callable=holapython,  # Python function to run
+        python_callable=load_customers_postgres,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
@@ -110,15 +148,12 @@ with DAG(
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        sql='''
-         CREATE TABLE IF NOT EXISTS customers(
-         firstname TEXT,
-         lastname TEXT,
-         phone TEXT,
-         address TEXT,
-         type TEXT
-         )
-        '''
+        sql="""
+            INSERT INTO customers (firstname, lastname, phone, address, type)
+            VALUES %s
+        """,
+        parameters="{{ task_instance.xcom_pull(task_ids='clean_codes') }}",  
+        autocommit=True 
     )
 
     l2 = PostgresOperator(
