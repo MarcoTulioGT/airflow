@@ -23,8 +23,8 @@ def holapython():
 
 def read():
     bucket_name = 'rivarly_newclassics'
-    blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
-    #blob_destination = 'gt_data_lake/clientes_raw.csv'
+    csv_file_name = 'gt_data_lake/RAW_DATA/clientes.csv'
+    blob_destination = 'gt_data_lake/PROCESSED_DATA/clientes.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
@@ -32,13 +32,11 @@ def read():
     data = StringIO(csv_data)
     df = pd.read_csv(data)
     print(df)
-    #csv_buffer = StringIO()
-    #df.to_csv(csv_buffer, index=False)
-    #csv_buffer.seek(0)
-    #blobdest = bucket.blob(blob_destination)
-    #blobdest.upload_from_file(csv_buffer, content_type="text/csv")
-    #with blob.open("r") as f:
-    #    print(f.read())
+    csv_buffer = StringIO()
+    df.to_csv(csv_buffer, index=False)
+    csv_buffer.seek(0)
+    blobdest = bucket.blob(blob_destination)
+    blobdest.upload_from_file(csv_buffer, content_type="text/csv")
 
 
 def load_customers_postgres():
@@ -169,7 +167,7 @@ with DAG(
 
     t2 = PythonOperator(
         task_id='clean_customers',  # Unique task ID
-        python_callable=load_customers_postgres,  # Python function to run
+        python_callable=read,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
