@@ -150,7 +150,12 @@ with DAG(
         task_id= 'create_tables',
         postgres_conn_id='postgres',
         sql='''
-         CREATE TABLE IF NOT EXISTS customers(
+         
+         DROP TABLE IF EXISTS customers;
+         DROP TABLE IF EXISTS events;
+         DROP TABLE IF EXISTS purchases;
+
+         CREATE TABLE customers(
          firstname TEXT,
          lastname TEXT,
          phone TEXT,
@@ -158,13 +163,13 @@ with DAG(
          type TEXT
          );
 
-         CREATE TABLE IF NOT EXISTS events(
+         CREATE TABLE events(
          evento TEXT,
          idcliente TEXT,
          fecha TEXT
          );
 
-         CREATE TABLE IF NOT EXISTS purchases(
+         CREATE TABLE purchases(
          idevento TEXT,
          idcliente TEXT,
          type TEXT,
@@ -188,7 +193,9 @@ with DAG(
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','60','pay','2024-09-04 19:01:48') '''
+        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','60','pay','2024-09-04 19:01:48') 
+               ('1','60','pay','2024-09-04 19:01:48'), ('1','500','pay','2024-10-04 19:01:48'), ('1','800','pay','2024-04-04 19:01:48')
+             '''
     )
 
     ping_mongo = PythonOperator(
