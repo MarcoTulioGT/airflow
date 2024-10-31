@@ -1,14 +1,14 @@
 
 from datetime import datetime, timedelta
 from google.cloud import storage
+from pymongo.mongo_client import MongoClient
 import time
-# The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
-
-# Operators; we need this to operate!
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+
+uri = "mongodb+srv://mcata:Mk21jm00@cluster0.s5vjz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 
 def holapython():
@@ -24,6 +24,15 @@ def read():
     with blob.open("r") as f:
         print(f.read())
 
+
+def pingMongo():
+    client = MongoClient(uri)
+    # Send a ping to confirm a successful connection
+    try:
+        client.admin.command('ping')
+        print("Pinged your deployment. You successfully connected to MongoDB!")
+    except Exception as e:
+        print(e)
 
 
 
@@ -65,7 +74,7 @@ with DAG(
     )
 
     t2 = PythonOperator(
-        task_id='LoadClients',  # Unique task ID
+        task_id='Load_Clients',  # Unique task ID
         python_callable=read,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
@@ -86,17 +95,23 @@ with DAG(
         task_id= 'create_table',
         postgres_conn_id='postgres',
         sql='''
-         CREATE TABLE IF NOT EXIST customers(
+         CREATE TABLE IF NOT EXISTS customers(
          firstname TEXT,
          lastname TEXT,
-         phone: TEXT,
-         address: TEXT,
-         type: TEXT
+         phone TEXT,
+         address TEXT,
+         type TEXT
          )
         '''
+    )
+
+    pingmongo = PythonOperator(
+        task_id='validate_ping_mongo',  # Unique task ID
+        python_callable=pingMongo,  # Python function to run
+        provide_context=True,  # Provides context like execution_date
     )
 
 
 
 
-    t1 >> [t2, t3, t4] >> create_table
+    t1 >> [t2, t3, t4] >> create_table >> pingmongo
