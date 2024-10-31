@@ -182,7 +182,7 @@ with DAG(
     l2 = PostgresOperator(
         task_id= 'load_events',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO customers (evento, idcliente, fecha) VALUES ('addcart','60','2024-09-04 19:01:48') '''
+        sql='''INSERT INTO events (evento, idcliente, fecha) VALUES ('addcart','60','2024-09-04 19:01:48') '''
     )
 
     l3 = PostgresOperator(
