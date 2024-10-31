@@ -167,7 +167,7 @@ with DAG(
 
     t2 = PythonOperator(
         task_id='clean_customers',  # Unique task ID
-        python_callable=load_customers_postgres,  # Python function to run
+        python_callable=read,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
