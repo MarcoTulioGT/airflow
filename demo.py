@@ -90,7 +90,7 @@ def clean_events_purchases():
     blobs = bucket.list_blobs()
     matching_blob = [blob.name for blob in blobs if regex.search(blob.name)]
     print(matching_blob)
-    blob = bucket.blob(matching_blob)
+    blob = bucket.blob(matching_blob[0])
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
