@@ -336,7 +336,7 @@ with DAG(
 
 
     t1 >> [t5, t3] >> t4 >> create_table >> [l1]
-    l1 << getc << t4
+    l1 << generate_sql_task << getc << t4
     #l1 << gete << t4
     #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
