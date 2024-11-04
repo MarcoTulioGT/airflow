@@ -6,6 +6,8 @@ import psycopg2
 import pandas as pd
 from io import StringIO
 from datetime import datetime
+import re
+
 
 import time
 from airflow import DAG
@@ -78,11 +80,17 @@ def clean_events():
     
 
 def clean_events_purchases():
-    blob_name = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'+currentdate+'.csv'
+    events_dates = datetime.today().strftime('%Y-%m-%d %H').replace('-','.').replace(':','.').replace(' ','.').concat('.*')
+    blob_name = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'+events_dates
+    print(blob_name)
+    regex = re.compile(blob_name)
     blob_destination_events = 'gt_data_lake/STAGE_DATA/purchases_cleaned.'+currentdate+'.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
+    blobs = bucket.list_blobs()
+    matching_blob = [blob.name for blob in blobs if regex.search(blob.name)]
+    print(matching_blob)
+    blob = bucket.blob(matching_blob)
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
