@@ -50,12 +50,18 @@ def get_stage_data(bucket_name, blob_name_arg,**kwargs):
     storage_client.close()
 
 
-def generate_sql_insert_query(**kwargs):
-    data = kwargs['ti'].xcom_pull(task_ids='get_customers', key='csv_data')
+def generate_sql_insert_query(type_load, **kwargs):
+    sql = ''
+    if type_load == 'get_customers':
+        sql = f"INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {values_str};"
+    elif type_load == 'get_events':
+        sql = f"INSERT INTO events (evento, idcliente, fecha) VALUES {values_str};"
+
+    data = kwargs['ti'].xcom_pull(task_ids=type_load, key='csv_data')
     if not data:
         raise ValueError("No data found in XCom for insertion")
     values_str = ', '.join([str(tuple(row)) for row in data])
-    sql_query = f"INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {values_str};"
+    sql_query = sql
     return sql_query
 
 def read_customers():
@@ -254,7 +260,7 @@ with DAG(
          dpi TEXT,
          address TEXT,
          type TEXT,
-         county TEXT
+         country TEXT
          );
 
          CREATE TABLE events(
@@ -279,9 +285,10 @@ with DAG(
         provide_context=True,  # Provides context like execution_date
     )
 
-    generate_sql_task = PythonOperator(
+    generate_sql_customers = PythonOperator(
     task_id='generate_sql_query',
     python_callable=generate_sql_insert_query,
+    op_kwargs={'type_load':'get_customers'}
     provide_context=True,
     dag=dag,
     )
@@ -291,6 +298,14 @@ with DAG(
         python_callable=get_stage_data,  # Python function to run
         op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name_arg': 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'},
         provide_context=True,  # Provides context like execution_date
+    )
+
+    generate_sql_events = PythonOperator(
+    task_id='generate_sql_query',
+    python_callable=generate_sql_insert_query,
+    op_kwargs={'type_load':'get_events'}
+    provide_context=True,
+    dag=dag,
     )
 
     getp = PythonOperator(
@@ -307,13 +322,14 @@ with DAG(
         #sql="""INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {{ ', '.join(str(tuple(row)) for row in task_instance.xcom_pull(task_ids='get_customers', key='csv_data') }};"""
         sql="{{ task_instance.xcom_pull(task_ids='generate_sql_query') }}",
     )
-    '''
+    
     l2 = PostgresOperator(
         task_id= 'load_events',
         postgres_conn_id='postgres',
-        sql=''''''INSERT INTO events (evento, idcliente, fecha) VALUES ('addcart','101','2024-09-04 19:01:48') ''''''
+        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_query') }}",
     )
 
+    '''
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
@@ -336,7 +352,8 @@ with DAG(
 
 
     t1 >> [t5, t3] >> t4 >> create_table >> [l1]
-    l1 << generate_sql_task << getc << t4
+    l1 << generate_sql_customers << getc << t4
+    l2 << generate_sql_events << gete << t4
     #l1 << gete << t4
     #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
