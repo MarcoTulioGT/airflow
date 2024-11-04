@@ -31,9 +31,9 @@ def holapython():
     print("hola Mundo")
 
 
-def get_stage_customers():
+def get_stage_data(bucket_name, blob_name_arg):
     curtomers_dates = datetime.today().strftime('%Y-%m-%d %H').replace('-','.').replace(':','.').replace(' ','.')
-    blob_name = 'gt_data_lake/STAGE_DATA/clientes_cleaned.'+curtomers_dates+'*'
+    blob_name = blob_name_arg+curtomers_dates+'*'
     regex = re.compile(blob_name)
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
@@ -261,7 +261,22 @@ with DAG(
 
     getc = PythonOperator(
         task_id='get_customers',  # Unique task ID
-        python_callable=get_stage_customers,  # Python function to run
+        python_callable=get_stage_data,  # Python function to run
+        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name': 'gt_data_lake/STAGE_DATA/clientes_cleaned.'},
+        provide_context=True,  # Provides context like execution_date
+    )
+
+    gete = PythonOperator(
+        task_id='get_events',  # Unique task ID
+        python_callable=get_stage_data,  # Python function to run
+        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name': 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'},
+        provide_context=True,  # Provides context like execution_date
+    )
+
+    getp = PythonOperator(
+        task_id='get_purchases',  # Unique task ID
+        python_callable=get_stage_data,  # Python function to run
+        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name': 'gt_data_lake/STAGE_DATA/purchases_cleaned.'},
         provide_context=True,  # Provides context like execution_date
     )
     
@@ -299,5 +314,7 @@ with DAG(
 
 
     t1 >> [t5, t3] >> t4 >> create_table >> [l1]
-    l1 << getc
+    l1 << getc << t4
+    l1 << gete << t4
+    l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
