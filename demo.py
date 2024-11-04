@@ -288,7 +288,7 @@ with DAG(
     generate_sql_customers = PythonOperator(
     task_id='generate_sql_query',
     python_callable=generate_sql_insert_query,
-    op_kwargs={'type_load':'get_customers'}
+    op_kwargs={'type_load':'get_customers'},
     provide_context=True,
     dag=dag,
     )
@@ -303,7 +303,7 @@ with DAG(
     generate_sql_events = PythonOperator(
     task_id='generate_sql_query',
     python_callable=generate_sql_insert_query,
-    op_kwargs={'type_load':'get_events'}
+    op_kwargs={'type_load':'get_events'},
     provide_context=True,
     dag=dag,
     )
