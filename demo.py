@@ -51,16 +51,16 @@ def get_stage_data(bucket_name, blob_name_arg,**kwargs):
 
 
 def generate_sql_insert_query(type_load, **kwargs):
+    data = kwargs['ti'].xcom_pull(task_ids=type_load, key='csv_data')
+    if not data:
+        raise ValueError("No data found in XCom for insertion")
+    values_str = ', '.join([str(tuple(row)) for row in data])
     sql = ''
     if type_load == 'get_customers':
         sql = f"INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {values_str};"
     elif type_load == 'get_events':
         sql = f"INSERT INTO events (evento, idcliente, fecha) VALUES {values_str};"
 
-    data = kwargs['ti'].xcom_pull(task_ids=type_load, key='csv_data')
-    if not data:
-        raise ValueError("No data found in XCom for insertion")
-    values_str = ', '.join([str(tuple(row)) for row in data])
     sql_query = sql
     return sql_query
 
