@@ -242,8 +242,10 @@ with DAG(
          firstname TEXT,
          lastname TEXT,
          phone TEXT,
+         dpi TEXT,
          address TEXT,
-         type TEXT
+         type TEXT,
+         county TEXT
          );
 
          CREATE TABLE events(
@@ -286,7 +288,7 @@ with DAG(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
         #sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
-        sql="""INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES {{ task_instance.xcom_pull(task_ids='get_customers', key='csv_data') }}; 
+        sql="""INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {{ task_instance.xcom_pull(task_ids='get_customers', key='csv_data') }}; 
         """
     )
     '''
