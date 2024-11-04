@@ -286,7 +286,7 @@ with DAG(
     )
 
     generate_sql_customers = PythonOperator(
-    task_id='generate_sql_query',
+    task_id='generate_sql_customers',
     python_callable=generate_sql_insert_query,
     op_kwargs={'type_load':'get_customers'},
     provide_context=True,
@@ -301,7 +301,7 @@ with DAG(
     )
 
     generate_sql_events = PythonOperator(
-    task_id='generate_sql_query',
+    task_id='generate_sql_events',
     python_callable=generate_sql_insert_query,
     op_kwargs={'type_load':'get_events'},
     provide_context=True,
@@ -320,13 +320,13 @@ with DAG(
         postgres_conn_id='postgres',
         #sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
         #sql="""INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {{ ', '.join(str(tuple(row)) for row in task_instance.xcom_pull(task_ids='get_customers', key='csv_data') }};"""
-        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_query') }}",
+        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_customers') }}",
     )
     
     l2 = PostgresOperator(
         task_id= 'load_events',
         postgres_conn_id='postgres',
-        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_query') }}",
+        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_events') }}",
     )
 
     '''
