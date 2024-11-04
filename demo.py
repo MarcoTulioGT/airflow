@@ -5,6 +5,7 @@ from pymongo.mongo_client import MongoClient
 import psycopg2
 import pandas as pd
 from io import StringIO
+from datetime import datetime
 
 import time
 from airflow import DAG
@@ -15,12 +16,13 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.hooks.base import BaseHook
 from airflow.providers.google.cloud.operators.gcs import GCSCreateBucketOperator
+currentdate = datetime.today().strftime('%Y-%m-%d %H:%M:%S').replace('-','.').replace(':','.').replace(' ','.')
+
 
 uri = Variable.get("url_mongo")
 bucket_name = 'rivarly_newclassics'
-bucket_name2 = 'rivarly_newclassics2'
 blob_name = 'gt_data_lake/RAW_DATA/clientes_regional.csv'
-blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned.csv'
+blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned'+currentdate+'.csv'
 
 
 def holapython():
@@ -35,11 +37,12 @@ def read():
     df = pd.read_csv(data)
     #print(df)
     filtered_df = df.loc[(df['country'] == 'GT')]
-    write_upload(bucket_name2, filtered_df, blob_destination)
+    write_upload(bucket_name, filtered_df, blob_destination)
     storage_client.close()
 
 
 def write_upload(bucket_name, df,blob_destination):
+    print(currentdate)
     connection = BaseHook.get_connection('google_cloud_default')
     storage_client = storage.Client(
         project=connection.extra_dejson.get('extra__google_cloud_platform__project')
