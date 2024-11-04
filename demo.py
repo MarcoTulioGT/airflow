@@ -15,28 +15,37 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 uri = Variable.get("url_mongo")
-
+bucket_name = 'rivarly_newclassics'
+blob_name = 'gt_data_lake/RAW_DATA/clientes_regional.csv'
+blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned.csv'
 
 
 def holapython():
     print("hola Mundo")
 
 def read():
-    bucket_name = 'rivarly_newclassics'
-    blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
-    blob_destination = 'gt_data_lake/PROCESSED_DATA/clientes.csv'
+    
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
-    print(df)
+    #print(df)
+    filtered_df = df.loc[(df['country'] == 'GT')]
+    write_upload(bucket_name, filtered_df, blob_destination)
+    storage_client.close()
+
+
+def write_upload(bucket_name, df,blob_destination):
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
     csv_buffer = StringIO()
     df.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
     blobdest = bucket.blob(blob_destination)
     blobdest.upload_from_file(csv_buffer, content_type="text/csv")
+    storage_client.close()
 
 
 def load_customers_postgres():
