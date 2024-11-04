@@ -31,7 +31,7 @@ def holapython():
     print("hola Mundo")
 
 
-def get_stage_data(bucket_name, blob_name_arg):
+def get_stage_data(bucket_name, blob_name_arg,**kwargs):
     curtomers_dates = datetime.today().strftime('%Y-%m-%d %H').replace('-','.').replace(':','.').replace(' ','.')
     blob_name = blob_name_arg+curtomers_dates+'*'
     regex = re.compile(blob_name)
@@ -45,6 +45,8 @@ def get_stage_data(bucket_name, blob_name_arg):
     data = StringIO(csv_data)
     df = pd.read_csv(data)
     print(df)
+    data_tuples = list(df.itertuples(index=False, name=None))
+    kwargs['data'].xcom_push(key='csv_data', value=data_tuples)
     storage_client.close()
 
 def read_customers():
@@ -283,7 +285,9 @@ with DAG(
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
+        #sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
+        sql="""INSERT INTO your_table_name (id, firstname, lastname, phone, address, type) VALUES {{ task_instance.xcom_pull(task_ids='get_stage_data', key='csv_data') }}; 
+        """
     )
     '''
     l2 = PostgresOperator(
