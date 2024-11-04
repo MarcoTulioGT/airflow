@@ -41,7 +41,7 @@ def read():
 def write_upload(bucket_name, df,blob_destination):
     connection = BaseHook.get_connection('google_cloud_default')
     storage_client = storage.Client(
-        project=connection.extra_dejson.get()
+        project=connection.extra_dejson.get('extra__google_cloud_platform__project')
     )
     bucket = storage_client.bucket(bucket_name)
     csv_buffer = StringIO()
