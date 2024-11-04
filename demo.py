@@ -17,7 +17,7 @@ from airflow.hooks.base import BaseHook
 from airflow.providers.google.cloud.operators.gcs import GCSCreateBucketOperator
 
 uri = Variable.get("url_mongo")
-bucket_name = 'rivarly_newclassics'
+bucket_name = 'rivarly_newclassics2'
 blob_name = 'gt_data_lake/RAW_DATA/clientes_regional.csv'
 blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned.csv'
 
@@ -273,5 +273,5 @@ with DAG(
 
 
 
-    t1 >> [t2, t3, t4] 
+    t1 >> t2 >> [t5, t3, t4] 
     #>> create_table >> [l1, l2, l3] >> ping_mongo >> load_mongo
