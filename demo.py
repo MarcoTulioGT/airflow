@@ -17,7 +17,8 @@ from airflow.hooks.base import BaseHook
 from airflow.providers.google.cloud.operators.gcs import GCSCreateBucketOperator
 
 uri = Variable.get("url_mongo")
-bucket_name = 'rivarly_newclassics2'
+bucket_name = 'rivarly_newclassics'
+bucket_name2 = 'rivarly_newclassics2'
 blob_name = 'gt_data_lake/RAW_DATA/clientes_regional.csv'
 blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned.csv'
 
@@ -34,7 +35,7 @@ def read():
     df = pd.read_csv(data)
     #print(df)
     filtered_df = df.loc[(df['country'] == 'GT')]
-    write_upload(bucket_name, filtered_df, blob_destination)
+    write_upload(bucket_name2, filtered_df, blob_destination)
     storage_client.close()
 
 
