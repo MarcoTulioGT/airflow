@@ -46,7 +46,7 @@ def get_stage_data(bucket_name, blob_name_arg,**kwargs):
     df = pd.read_csv(data)
     print(df)
     data_tuples = list(df.itertuples(index=False, name=None))
-    kwargs['data'].xcom_push(key='csv_data', value=data_tuples)
+    kwargs['ti'].xcom_push(key='csv_data', value=data_tuples)
     storage_client.close()
 
 def read_customers():
