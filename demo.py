@@ -49,6 +49,15 @@ def get_stage_data(bucket_name, blob_name_arg,**kwargs):
     kwargs['ti'].xcom_push(key='csv_data', value=data_tuples)
     storage_client.close()
 
+
+def generate_sql_insert_query(**kwargs):
+    data = kwargs['ti'].xcom_pull(task_ids='read_csv_from_gcs', key='csv_data')
+    if not data:
+        raise ValueError("No data found in XCom for insertion")
+    values_str = ', '.join([str(tuple(row)) for row in data])
+    sql_query = f"INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {values_str};"
+    return sql_query
+
 def read_customers():
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
@@ -270,6 +279,13 @@ with DAG(
         provide_context=True,  # Provides context like execution_date
     )
 
+    generate_sql_task = PythonOperator(
+    task_id='generate_sql_query',
+    python_callable=generate_sql_insert_query,
+    provide_context=True,
+    dag=dag,
+    )
+
     gete = PythonOperator(
         task_id='get_events',  # Unique task ID
         python_callable=get_stage_data,  # Python function to run
@@ -288,7 +304,8 @@ with DAG(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
         #sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
-        sql="""INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {{ ', '.join(str(tuple(row)) for row in task_instance.xcom_pull(task_ids='get_customers', key='csv_data') }};"""
+        #sql="""INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {{ ', '.join(str(tuple(row)) for row in task_instance.xcom_pull(task_ids='get_customers', key='csv_data') }};"""
+        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_query') }}",
     )
     '''
     l2 = PostgresOperator(
