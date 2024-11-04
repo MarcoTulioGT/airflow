@@ -51,7 +51,7 @@ def get_stage_data(bucket_name, blob_name_arg,**kwargs):
 
 
 def generate_sql_insert_query(**kwargs):
-    data = kwargs['ti'].xcom_pull(task_ids='read_csv_from_gcs', key='csv_data')
+    data = kwargs['ti'].xcom_pull(task_ids='get_customers', key='csv_data')
     if not data:
         raise ValueError("No data found in XCom for insertion")
     values_str = ', '.join([str(tuple(row)) for row in data])
