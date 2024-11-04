@@ -80,8 +80,8 @@ def clean_events():
     
 
 def clean_events_purchases():
-    events_dates = datetime.today().strftime('%Y-%m-%d %H').replace('-','.').replace(':','.').replace(' ','.').concat('.*')
-    blob_name = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'+events_dates
+    events_dates = datetime.today().strftime('%Y-%m-%d %H').replace('-','.').replace(':','.').replace(' ','.')
+    blob_name = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'+events_dates+'*'
     print(blob_name)
     regex = re.compile(blob_name)
     blob_destination_events = 'gt_data_lake/STAGE_DATA/purchases_cleaned.'+currentdate+'.csv'
