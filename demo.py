@@ -13,6 +13,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.providers.google.cloud.operators.gcs import GCSCreateBucketOperator, GCSToGCSOperator
 
 uri = Variable.get("url_mongo")
 bucket_name = 'rivarly_newclassics'
@@ -174,7 +175,7 @@ with DAG(
         bash_command='date',
     )
 
-    t2 = PythonOperator(
+    t5 = PythonOperator(
         task_id='clean_customers',  # Unique task ID
         python_callable=read,  # Python function to run
         provide_context=True,  # Provides context like execution_date
@@ -192,7 +193,13 @@ with DAG(
         provide_context=True,  # Provides context like execution_date
     )
 
-    load_purchases_postgres
+    
+    t2 = GCSCreateBucketOperator(
+        task_id='create_gcs_bucket',
+        bucket_name='rivarly_newclassics2',
+        gcp_conn_id='google_cloud_default',  # La conexión que configuraste en Airflow
+        location='US',  # Especifica la región según tus necesidades
+    )
 
     create_table = PostgresOperator(
         task_id= 'create_tables',
@@ -262,4 +269,5 @@ with DAG(
 
 
 
-    t1 >> [t2, t3, t4] >> create_table >> [l1, l2, l3] >> ping_mongo >> load_mongo
+    t1 >> [t2, t3, t4] 
+    #>> create_table >> [l1, l2, l3] >> ping_mongo >> load_mongo
