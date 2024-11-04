@@ -206,10 +206,11 @@ with DAG(
         location='US',  # Especifica la región según tus necesidades
     )
 
+    '''
     create_table = PostgresOperator(
         task_id= 'create_tables',
         postgres_conn_id='postgres',
-        sql='''
+        sql=''''''
          
          DROP TABLE IF EXISTS customers;
          DROP TABLE IF EXISTS events;
@@ -236,42 +237,40 @@ with DAG(
          type TEXT,
          fecha TEXT
          );
-        '''
+        ''''''
     )
 
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
+        sql=''''''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') ''''''
     )
 
     l2 = PostgresOperator(
         task_id= 'load_events',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO events (evento, idcliente, fecha) VALUES ('addcart','101','2024-09-04 19:01:48') '''
+        sql=''''''INSERT INTO events (evento, idcliente, fecha) VALUES ('addcart','101','2024-09-04 19:01:48') ''''''
     )
 
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql='''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','101','pay','2024-09-04 19:01:48'),
+        sql=''''''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','101','pay','2024-09-04 19:01:48'),
                ('2','101','pay','2024-09-04 19:01:48'), ('3','101','pay','2024-10-04 19:01:48'), ('4','101','pay','2024-04-04 19:01:48');
-             '''
-    )
+             ''''''
+    )'''
 
-    ping_mongo = PythonOperator(
-        task_id='ping_mongo',  # Unique task ID
-        python_callable=pingMongo,  # Python function to run
-        provide_context=True,  # Provides context like execution_date
-    )
+    ''' ping_mongo = PythonOperator(
+            task_id='ping_mongo',  # Unique task ID
+            python_callable=pingMongo,  # Python function to run
+            provide_context=True,  # Provides context like execution_date
+        )
 
-    load_mongo = PythonOperator(
-        task_id='load_mongo',  # Unique task ID
-        python_callable=postgres_to_mongo,  # Python function to run
-        provide_context=True,  # Provides context like execution_date
-    )
-
-
+        load_mongo = PythonOperator(
+            task_id='load_mongo',  # Unique task ID
+            python_callable=postgres_to_mongo,  # Python function to run
+            provide_context=True,  # Provides context like execution_date
+        )'''
 
 
     t1 >> t2 >> [t5, t3, t4] 
