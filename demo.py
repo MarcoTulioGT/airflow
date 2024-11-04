@@ -28,7 +28,7 @@ blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned'+currentdate+'.csv'
 def holapython():
     print("hola Mundo")
 
-def read():
+def read_customers():
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
@@ -57,31 +57,24 @@ def write_upload(bucket_name, df,blob_destination):
     storage_client.close()
 
 
-def load_customers_postgres():
-    bucket_name = 'rivarly_newclassics'
-    blob_name = 'gt_data_lake/RAW_DATA/clientes.csv'
-    #blob_destination = 'gt_data_lake/clientes_raw.csv'
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-    csv_data = blob.download_as_text()
-    data = StringIO(csv_data)
-    df = pd.read_csv(data)
-    data = df.values.tolist()
-    return data
+def purchases(evento):
+    if evento == 'pay':
+        return 'purchase'
+    else:
+        return evento
 
-def load_events_postgres():
-    bucket_name = 'rivarly_newclassics'
+def clean_events():
     blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
-    #blob_destination = 'gt_data_lake/clientes_raw.csv'
+    blob_destination_events = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned'+currentdate+'.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
-    data = df.values.tolist()
-    return data
+    df['Purchase'] = df['evento'].apply(purchases)
+    write_upload(bucket_name, df, blob_destination_events)
+    storage_client.close()
     
 
 def load_purchases_postgres():
@@ -185,13 +178,13 @@ with DAG(
 
     t5 = PythonOperator(
         task_id='clean_customers',  # Unique task ID
-        python_callable=read,  # Python function to run
+        python_callable=read_customers,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
     t3 = PythonOperator(
         task_id='clean_events',  # Unique task ID
-        python_callable=load_events_postgres,  # Python function to run
+        python_callable=clean_events,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
