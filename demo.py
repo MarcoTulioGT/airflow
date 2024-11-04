@@ -30,6 +30,23 @@ blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned.'+currentdate+'.csv
 def holapython():
     print("hola Mundo")
 
+
+def get_stage_customers():
+    curtomers_dates = datetime.today().strftime('%Y-%m-%d %H').replace('-','.').replace(':','.').replace(' ','.')
+    blob_name = 'gt_data_lake/STAGE_DATA/clientes_cleaned.'+curtomers_dates+'*'
+    regex = re.compile(blob_name)
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blobs = bucket.list_blobs()
+    matching_blob = [blob.name for blob in blobs if regex.search(blob.name)]
+    print(matching_blob)
+    blob = bucket.blob(matching_blob[0])
+    csv_data = blob.download_as_text()
+    data = StringIO(csv_data)
+    df = pd.read_csv(data)
+    print(df)
+    storage_client.close()
+
 def read_customers():
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
@@ -74,7 +91,7 @@ def clean_events():
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
-    df['Purchases'] = df['evento'].apply(purchases)
+    df['purchases'] = df['evento'].apply(purchases)
     write_upload(bucket_name, df, blob_destination_events)
     storage_client.close()
     
@@ -95,7 +112,7 @@ def clean_events_purchases():
     data = StringIO(csv_data)
     df = pd.read_csv(data)
     df.drop(['evento'], axis='columns', inplace=True)
-    filtered_df = df.loc[(df['Purchases'] == 'purchase')]
+    filtered_df = df.loc[(df['purchases'] == 'purchase')]
     write_upload(bucket_name, filtered_df, blob_destination_events)
     storage_client.close()
 
@@ -208,11 +225,11 @@ with DAG(
         location='US',  # Especifica la región según tus necesidades
     )'''
 
-    '''
+    
     create_table = PostgresOperator(
         task_id= 'create_tables',
         postgres_conn_id='postgres',
-        sql=''''''
+        sql='''
          
          DROP TABLE IF EXISTS customers;
          DROP TABLE IF EXISTS events;
@@ -239,15 +256,21 @@ with DAG(
          type TEXT,
          fecha TEXT
          );
-        ''''''
+        '''
     )
 
+    getc = PythonOperator(
+        task_id='get_customers',  # Unique task ID
+        python_callable=get_stage_customers,  # Python function to run
+        provide_context=True,  # Provides context like execution_date
+    )
+    
     l1 = PostgresOperator(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
-        sql=''''''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') ''''''
+        sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
     )
-
+    '''
     l2 = PostgresOperator(
         task_id= 'load_events',
         postgres_conn_id='postgres',
@@ -275,5 +298,6 @@ with DAG(
         )'''
 
 
-    t1 >> [t5, t3] >> t4
-    #>> create_table >> [l1, l2, l3] >> ping_mongo >> load_mongo
+    t1 >> [t5, t3] >> t4 >> create_table >> [l1]
+    l1 << getc
+    # >> [l1, l2, l3] >> ping_mongo >> load_mongo
