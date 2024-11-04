@@ -13,7 +13,8 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.providers.google.cloud.operators.gcs import GCSCreateBucketOperator, GCSToGCSOperator
+from airflow.hooks.base import BaseHook
+from airflow.providers.google.cloud.operators.gcs import GCSCreateBucketOperator
 
 uri = Variable.get("url_mongo")
 bucket_name = 'rivarly_newclassics'
@@ -25,7 +26,6 @@ def holapython():
     print("hola Mundo")
 
 def read():
-    
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
@@ -39,7 +39,11 @@ def read():
 
 
 def write_upload(bucket_name, df,blob_destination):
-    storage_client = storage.Client()
+    connection = BaseHook.get_connection('google_cloud_default')
+    storage_client = storage.Client(
+        project=connection.extra_dejson.get('extra__google_cloud_platform__project'),
+        credentials=connection.get_credentials()
+    )
     bucket = storage_client.bucket(bucket_name)
     csv_buffer = StringIO()
     df.to_csv(csv_buffer, index=False)
