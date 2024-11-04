@@ -286,7 +286,7 @@ with DAG(
         task_id= 'load_customers',
         postgres_conn_id='postgres',
         #sql='''INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES ( '101','John', 'Doe', '1234567890', '123 Main St', 'Regular') '''
-        sql="""INSERT INTO your_table_name (id, firstname, lastname, phone, address, type) VALUES {{ task_instance.xcom_pull(task_ids='get_stage_data', key='csv_data') }}; 
+        sql="""INSERT INTO customers (id, firstname, lastname, phone, address, type) VALUES {{ task_instance.xcom_pull(task_ids='get_stage_data', key='csv_data') }}; 
         """
     )
     '''
@@ -319,6 +319,6 @@ with DAG(
 
     t1 >> [t5, t3] >> t4 >> create_table >> [l1]
     l1 << getc << t4
-    l1 << gete << t4
-    l1 << getp << t4
+    #l1 << gete << t4
+    #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
