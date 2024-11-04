@@ -22,7 +22,7 @@ currentdate = datetime.today().strftime('%Y-%m-%d %H:%M:%S').replace('-','.').re
 uri = Variable.get("url_mongo")
 bucket_name = 'rivarly_newclassics'
 blob_name = 'gt_data_lake/RAW_DATA/clientes_regional.csv'
-blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned'+currentdate+'.csv'
+blob_destination = 'gt_data_lake/STAGE_DATA/clientes_cleaned.'+currentdate+'.csv'
 
 
 def holapython():
@@ -65,34 +65,34 @@ def purchases(evento):
 
 def clean_events():
     blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
-    blob_destination_events = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned'+currentdate+'.csv'
+    blob_destination_events = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'+currentdate+'.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
-    df['Purchase'] = df['evento'].apply(purchases)
+    df['Purchases'] = df['evento'].apply(purchases)
     write_upload(bucket_name, df, blob_destination_events)
     storage_client.close()
     
 
-def load_purchases_postgres():
-    bucket_name = 'rivarly_newclassics'
-    blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
-    #blob_destination = 'gt_data_lake/clientes_raw.csv'
+def clean_events_purchases():
+    blob_name = 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'+currentdate+'.csv'
+    blob_destination_events = 'gt_data_lake/STAGE_DATA/purchases_cleaned.'+currentdate+'.csv'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     csv_data = blob.download_as_text()
     data = StringIO(csv_data)
     df = pd.read_csv(data)
-    data = df.values.tolist()
-    return data
+    df.drop(['evento'], axis='columns', inplace=True)
+    filtered_df = df.loc[(df['Purchases'] == 'purchase')]
+    write_upload(bucket_name, filtered_df, blob_destination_events)
+    storage_client.close()
 
 def pingMongo():
     client = MongoClient(uri)
-    # Send a ping to confirm a successful connection
     try:
         client.admin.command('ping')
         print("Pinged your deployment. You successfully connected to MongoDB!")
@@ -140,9 +140,7 @@ def postgres_to_mongo():
 
 
 with DAG(
-    'etl.demo.gcp',
-    # These args will get passed on to each operator
-    # You can override them on a per-task basis during operator initialization
+    'etl_demo_gcp_postgresql_mongo',
     default_args={
         'depends_on_past': False,
         'email': ['devopsgt@gmail.com'],
@@ -190,17 +188,17 @@ with DAG(
 
     t4 = PythonOperator(
         task_id='clean_purchases',  # Unique task ID
-        python_callable=load_purchases_postgres,  # Python function to run
+        python_callable=clean_events_purchases,  # Python function to run
         provide_context=True,  # Provides context like execution_date
     )
 
     
-    t2 = GCSCreateBucketOperator(
+    ''' t2 = GCSCreateBucketOperator(
         task_id='create_gcs_bucket',
         bucket_name='rivarly_newclassics2',
         gcp_conn_id='google_cloud_default',  # La conexión que configuraste en Airflow
         location='US',  # Especifica la región según tus necesidades
-    )
+    )'''
 
     '''
     create_table = PostgresOperator(
@@ -269,5 +267,5 @@ with DAG(
         )'''
 
 
-    t1 >> t2 >> [t5, t3, t4] 
+    t1 >> [t5, t3, t4] 
     #>> create_table >> [l1, l2, l3] >> ping_mongo >> load_mongo
