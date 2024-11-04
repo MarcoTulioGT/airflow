@@ -262,21 +262,21 @@ with DAG(
     getc = PythonOperator(
         task_id='get_customers',  # Unique task ID
         python_callable=get_stage_data,  # Python function to run
-        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name': 'gt_data_lake/STAGE_DATA/clientes_cleaned.'},
+        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name_arg': 'gt_data_lake/STAGE_DATA/clientes_cleaned.'},
         provide_context=True,  # Provides context like execution_date
     )
 
     gete = PythonOperator(
         task_id='get_events',  # Unique task ID
         python_callable=get_stage_data,  # Python function to run
-        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name': 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'},
+        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name_arg': 'gt_data_lake/STAGE_DATA/eventos_ficticios_cleaned.'},
         provide_context=True,  # Provides context like execution_date
     )
 
     getp = PythonOperator(
         task_id='get_purchases',  # Unique task ID
         python_callable=get_stage_data,  # Python function to run
-        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name': 'gt_data_lake/STAGE_DATA/purchases_cleaned.'},
+        op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name_arg': 'gt_data_lake/STAGE_DATA/purchases_cleaned.'},
         provide_context=True,  # Provides context like execution_date
     )
     
