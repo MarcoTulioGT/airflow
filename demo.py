@@ -152,7 +152,7 @@ def postgres_to_mongo():
     conn = postgres_hook.get_conn()
     cursor = conn.cursor()
     cursor.execute('''
-               select  id, firstname , lastname , phone , address , c.type, p.type, p.fecha 
+               select  id, firstname , lastname , phone , address , c.type, p.purchases, p.fecha 
                 from customers c 
                 join events e 
                 on c.id = e.idcliente 
@@ -346,23 +346,24 @@ with DAG(
         sql="{{ task_instance.xcom_pull(task_ids='generate_sql_purchases') }}",
     )
 
-    ''' ping_mongo = PythonOperator(
+    ping_mongo = PythonOperator(
             task_id='ping_mongo',  # Unique task ID
             python_callable=pingMongo,  # Python function to run
             provide_context=True,  # Provides context like execution_date
         )
 
-        load_mongo = PythonOperator(
-            task_id='load_mongo',  # Unique task ID
-            python_callable=postgres_to_mongo,  # Python function to run
-            provide_context=True,  # Provides context like execution_date
-        )'''
+    load_mongo = PythonOperator(
+        task_id='load_mongo',  # Unique task ID
+        python_callable=postgres_to_mongo,  # Python function to run
+        provide_context=True,  # Provides context like execution_date
+    )
 
 
     t1 >> [t5, t3] >> t4 >> create_table 
     l1 << generate_sql_customers << getc << create_table
     l2 << generate_sql_events << gete  << create_table
     l3 << generate_sql_purchases << getp  << create_table
+    load_mongo << ping_mongo << [l1,l2,l3]
     #l1 << gete << t4
     #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
