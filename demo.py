@@ -362,7 +362,7 @@ with DAG(
     t1 >> [t5, t3] >> t4 >> create_table >> [l1]
     l1 << generate_sql_customers << getc << t4
     l2 << generate_sql_events << gete << t4
-    l3 << generate_sql_events << getp << t4
+    l3 << generate_sql_purchases << getp << t4
     #l1 << gete << t4
     #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
