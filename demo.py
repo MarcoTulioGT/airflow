@@ -60,6 +60,8 @@ def generate_sql_insert_query(type_load, **kwargs):
         sql = f"INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {values_str};"
     elif type_load == 'get_events':
         sql = f"INSERT INTO events (evento, idcliente, fecha, purchases) VALUES {values_str};"
+    elif type_load == 'get_purchases':
+        sql = f"INSERT INTO purchases (idcliente, fecha, purchases) VALUES {values_str};"
 
     sql_query = sql
     return sql_query
@@ -271,9 +273,8 @@ with DAG(
          );
 
          CREATE TABLE purchases(
-         idevento TEXT,
          idcliente TEXT,
-         type TEXT,
+         purchases TEXT,
          fecha TEXT
          );
         '''
@@ -315,6 +316,14 @@ with DAG(
         op_kwargs={'bucket_name': 'rivarly_newclassics', 'blob_name_arg': 'gt_data_lake/STAGE_DATA/purchases_cleaned.'},
         provide_context=True,  # Provides context like execution_date
     )
+
+    generate_sql_purchases = PythonOperator(
+    task_id='generate_sql_purchases',
+    python_callable=generate_sql_insert_query,
+    op_kwargs={'type_load':'get_purchases'},
+    provide_context=True,
+    dag=dag,
+    )
     
     l1 = PostgresOperator(
         task_id= 'load_customers',
@@ -330,14 +339,12 @@ with DAG(
         sql="{{ task_instance.xcom_pull(task_ids='generate_sql_events') }}",
     )
 
-    '''
+    
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql=''''''INSERT INTO purchases (idevento, idcliente, type, fecha) VALUES ('1','101','pay','2024-09-04 19:01:48'),
-               ('2','101','pay','2024-09-04 19:01:48'), ('3','101','pay','2024-10-04 19:01:48'), ('4','101','pay','2024-04-04 19:01:48');
-             ''''''
-    )'''
+        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_events') }}",
+    )
 
     ''' ping_mongo = PythonOperator(
             task_id='ping_mongo',  # Unique task ID
@@ -355,6 +362,7 @@ with DAG(
     t1 >> [t5, t3] >> t4 >> create_table >> [l1]
     l1 << generate_sql_customers << getc << t4
     l2 << generate_sql_events << gete << t4
+    l3 << generate_sql_events << getp << t4
     #l1 << gete << t4
     #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
