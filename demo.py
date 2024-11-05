@@ -97,7 +97,7 @@ def purchases(evento):
     if evento == 'pay':
         return 'purchase'
     else:
-        return ''
+        return 'other'
 
 def clean_events():
     blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
