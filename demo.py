@@ -343,7 +343,7 @@ with DAG(
     l3 = PostgresOperator(
         task_id= 'load_purchases',
         postgres_conn_id='postgres',
-        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_events') }}",
+        sql="{{ task_instance.xcom_pull(task_ids='generate_sql_purchases') }}",
     )
 
     ''' ping_mongo = PythonOperator(
