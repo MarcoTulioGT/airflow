@@ -59,7 +59,7 @@ def generate_sql_insert_query(type_load, **kwargs):
     if type_load == 'get_customers':
         sql = f"INSERT INTO customers (firstname, lastname, phone, dpi, address, type,id, country) VALUES {values_str};"
     elif type_load == 'get_events':
-        sql = f"INSERT INTO events (evento, idcliente, fecha) VALUES {values_str};"
+        sql = f"INSERT INTO events (evento, idcliente, fecha, purchases) VALUES {values_str};"
 
     sql_query = sql
     return sql_query
@@ -97,7 +97,7 @@ def purchases(evento):
     if evento == 'pay':
         return 'purchase'
     else:
-        return evento
+        return ''
 
 def clean_events():
     blob_name = 'gt_data_lake/RAW_DATA/eventos_ficticios.csv'
@@ -266,7 +266,8 @@ with DAG(
          CREATE TABLE events(
          evento TEXT,
          idcliente TEXT,
-         fecha TEXT
+         fecha TEXT,
+         purchases TEXT
          );
 
          CREATE TABLE purchases(
