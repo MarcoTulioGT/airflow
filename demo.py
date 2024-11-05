@@ -360,9 +360,9 @@ with DAG(
 
 
     t1 >> [t5, t3] >> t4 >> create_table >> [l1,l2,l3]
-    l1 << generate_sql_customers << getc 
-    l2 << generate_sql_events << gete 
-    l3 << generate_sql_purchases << getp 
+    l1 << generate_sql_customers << getc << create_table
+    l2 << generate_sql_events << gete  << create_table
+    l3 << generate_sql_purchases << getp  << create_table
     #l1 << gete << t4
     #l1 << getp << t4
     # >> [l1, l2, l3] >> ping_mongo >> load_mongo
